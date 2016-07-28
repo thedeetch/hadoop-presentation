@@ -13,7 +13,11 @@ class: middle
 * MS SQL Server DBA
 * Newly minted MS in CS (go jackets!)
 * BS in CS (go chargers!)
-* Cubs fan
+* Interests 
+  * machine learning
+  * computer vision
+  * Chicago Cubs
+* Spaces > Tabs
 
 ---
 
@@ -207,6 +211,81 @@ from the [MIMIC III critical care database][mimic] with over 10 years of data fr
 
 # How was it done?
 
+Data flow diagram
+
+```
+# feature extraction          # model fitting        # profit!
+
+   raw data          |       |   train model   |
+      |              |       |     |     ^     |
+      v              |       |     v     |     |
+extract features     |  -->  |  evaluate model | --> final model
+      |              |       |                 |
+      v              |       |                 |
+cache in memory      |       |                 |
+```
+
+---
+
+# How was it done?
+
+5 node Hadoop cluster on Google Cloud Dataproc
+
+```bash
+gcloud dataproc clusters create cluster-1 \
+  --zone us-central1-f --master-machine-type n1-standard-4 \
+  --master-boot-disk-size 500 --num-workers 4 \
+  --worker-machine-type n1-standard-4 \
+  --worker-boot-disk-size 500 --num-worker-local-ssds 1 \
+  --project cse8803-project
+```
+
+---
+
+# How was it done?
+
+Spark MLlib and Dataframe API
+
+```scala
+// build features
+val chartEvents = sqlContext.load.csv("chartevents.csv")
+// ...
+val features = buildFeatures(chartEvents, ...)
+
+// fit model using grid search and cross validation
+val lr = new LogisticRegression().setMaxIter(10)
+val pipeline = new Pipeline().setStages(Array(lr))
+val crossval = new CrossValidator()
+  .setEstimator(pipeline)
+  .setEvaluator(new BinaryClassificationEvaluator)
+
+val paramGrid = new ParamGridBuilder()
+  .addGrid(lr.regParam, Array(0.1, 0.01))
+  .build()
+crossval.setEstimatorParamMaps(paramGrid)
+crossval.setNumFolds(3)
+
+val cvModel = crossval.fit(features)
+val bestModel = cvModel.bestModel.asInstanceOf[PipelineModel].stages.last.asInstanceOf[LogisticRegressionModel]
+```
+
+---
+
+class: middle, center
+
+# Questions?
+
+---
+
+class: middle, center
+
+# Demo!
+
+---
+
+class: middle, center
+
+# Thank you!
 
 [mapreduce]: http://research.google.com/archive/mapreduce.html
 [ecosystem]: https://hadoopecosystemtable.github.io/
