@@ -55,6 +55,12 @@ A cluster computing framework based on the [Google MapReduce][mapreduce] paper.
 | Kafka | Pub/Sub messaging | Amazon Kinesis |
 | Solr | Search | Elasticsearch |
 | Spark/Storm/Flink | Compute engine | Google Dataflow |
+| Flume/Sqoop | Ingestion | |
+| Zookeeper | Coordinator | Consul, Etcd |
+| Pig | ETL language | |
+| Avro/Parquet | Serialization | Protobuf |
+| Oozie | Workflows | cron, Luigi |
+| Mahout | Machine learning | scikit-learn, Weka |
 
 [Hadoop Ecosystem Table][ecosystem]
 ---
@@ -277,9 +283,32 @@ class: middle, center
 
 ---
 
-class: middle, center
-
 # Demo!
+
+```scala
+val chartEvents = sqlContext.read.parquet("gs://cse8803-project/CHARTEVENTS")
+chartEvents.show
+
+// show off caching
+chartEvents.persist()
+chartEvents.count()
+chartEvents.count()
+
+// write some sql
+chartEvents.registerTempTable("chart_events")
+val chartEventSelected = sqlContext.sql("SELECT subject_id, charttime, itemid, value, valueuom FROM chart_events")
+chartEventSelected.show
+
+// use scala collections api
+import org.apache.spark.sql.Row
+val maxPressure = chartEventSelected.rdd
+  .filter{
+    case Row(subjectId, chartTime, itemId, value, valueuom) =>
+      subjectId == 27577 && itemId == 220060
+  }
+  .map(_.getString(3).toInt)
+  .reduce(_ max _)
+```
 
 ---
 
